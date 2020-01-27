@@ -1,47 +1,62 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { Switch, Redirect } from 'react-router-dom';
-
+import { StoreContext } from './context/StoreContext';
 import { RouteWithLayout } from './components';
 import { Main as MainLayout, Minimal as MinimalLayout } from './layouts';
-
+import Client from './views/Clients/';
+import Inventario from './views/Inventario/';
+import Ventas from './views/Ventas/';
 import {
-  Dashboard as DashboardView,
   ProductList as ProductListView,
   UserList as UserListView,
   Typography as TypographyView,
   Icons as IconsView,
   Account as AccountView,
   Settings as SettingsView,
-  SignUp as SignUpView,
   SignIn as SignInView,
+  SignUp as SignUpView,
   NotFound as NotFoundView
 } from './views';
 
 const Routes = () => {
+  const { state } = useContext(StoreContext);
+
   return (
     <Switch>
       <Redirect
         exact
         from="/"
-        to="/dashboard"
+        to={state.login ? '/inventory' : '/sign-in'}
       />
       <RouteWithLayout
-        component={DashboardView}
+        component={Client}
         exact
         layout={MainLayout}
-        path="/dashboard"
+        path="/clients"
       />
       <RouteWithLayout
-        component={UserListView}
+        component={Ventas}
         exact
         layout={MainLayout}
-        path="/users"
+        path={state.login ? "/ventas" : "/"}
       />
       <RouteWithLayout
-        component={ProductListView}
+        component={state.login ? Inventario : NotFoundView}
         exact
-        layout={MainLayout}
-        path="/products"
+        layout={state.login && MainLayout}
+        path={state.login ? '/inventory' : '/not-found'}
+      />
+      <RouteWithLayout
+        component={state.login ? UserListView : NotFoundView}
+        exact
+        layout={state.login && MainLayout}
+        path={state.login ? '/users' : '/not-found'}
+      />
+      <RouteWithLayout
+        component={state.login ? ProductListView : NotFoundView}
+        exact
+        layout={state.login && MainLayout}
+        path={state.login ? '/products' : '/not-found'}
       />
       <RouteWithLayout
         component={TypographyView}
@@ -68,16 +83,19 @@ const Routes = () => {
         path="/settings"
       />
       <RouteWithLayout
-        component={SignUpView}
+        component={
+          state.login && state.user.displayName === 'admin'
+            ? SignUpView
+            : NotFoundView
+        }
         exact
-        layout={MinimalLayout}
+        layout={MainLayout}
         path="/sign-up"
       />
       <RouteWithLayout
-        component={SignInView}
+        component={state.login ? Inventario : SignInView}
         exact
-        layout={MinimalLayout}
-        path="/sign-in"
+        path={state.login ? '/inventory' : '/sign-in'}
       />
       <RouteWithLayout
         component={NotFoundView}

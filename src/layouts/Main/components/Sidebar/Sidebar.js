@@ -1,18 +1,19 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import clsx from 'clsx';
 import PropTypes from 'prop-types';
 import { makeStyles } from '@material-ui/styles';
 import { Divider, Drawer } from '@material-ui/core';
-import DashboardIcon from '@material-ui/icons/Dashboard';
 import PeopleIcon from '@material-ui/icons/People';
-import ShoppingBasketIcon from '@material-ui/icons/ShoppingBasket';
-import TextFieldsIcon from '@material-ui/icons/TextFields';
-import ImageIcon from '@material-ui/icons/Image';
+import AddShoppingCartIcon from '@material-ui/icons/AddShoppingCart';
+import AddCircleIcon from '@material-ui/icons/AddCircle';
+import AssignmentIcon from '@material-ui/icons/Assignment';
 import AccountBoxIcon from '@material-ui/icons/AccountBox';
+import ShoppingCartIcon from '@material-ui/icons/ShoppingCart';
 import SettingsIcon from '@material-ui/icons/Settings';
-import LockOpenIcon from '@material-ui/icons/LockOpen';
-
-import { Profile, SidebarNav, UpgradePlan } from './components';
+import { StoreContext } from '../../../../context/StoreContext';
+import MotorcycleIcon from '@material-ui/icons/Motorcycle';
+import LocalMallIcon from '@material-ui/icons/LocalMall';
+import { Profile, SidebarNav } from './components';
 
 const useStyles = makeStyles(theme => ({
   drawer: {
@@ -38,40 +39,42 @@ const useStyles = makeStyles(theme => ({
 }));
 
 const Sidebar = props => {
+  const { state } = useContext(StoreContext);
   const { open, variant, onClose, className, ...rest } = props;
 
   const classes = useStyles();
 
-  const pages = [
+  const admin = [
     {
-      title: 'Dashboard',
-      href: '/dashboard',
-      icon: <DashboardIcon />
+      title: 'Inventario',
+      href: '/inventory',
+      icon: <AssignmentIcon />
     },
     {
-      title: 'Users',
-      href: '/users',
+      title: 'ventas',
+      href: '/ventas',
+      icon: <AddShoppingCartIcon />
+    },
+    { title: 'pedidos', href: '/pedidos', icon: <LocalMallIcon /> },
+    {
+      title: 'Clientes',
+      href: '/clients',
       icon: <PeopleIcon />
     },
     {
-      title: 'Products',
-      href: '/products',
-      icon: <ShoppingBasketIcon />
+      title: 'Compras',
+      href: '/compras',
+      icon: <ShoppingCartIcon />
     },
     {
-      title: 'Authentication',
-      href: '/sign-in',
-      icon: <LockOpenIcon />
+      title: 'Entregas',
+      href: '/pedidos',
+      icon: <MotorcycleIcon />
     },
     {
-      title: 'Typography',
-      href: '/typography',
-      icon: <TextFieldsIcon />
-    },
-    {
-      title: 'Icons',
-      href: '/icons',
-      icon: <ImageIcon />
+      title: 'Usuarios',
+      href: '/sign-up',
+      icon: <AddCircleIcon />
     },
     {
       title: 'Account',
@@ -82,6 +85,25 @@ const Sidebar = props => {
       title: 'Settings',
       href: '/settings',
       icon: <SettingsIcon />
+    }
+  ];
+
+  const tiendas = [
+    {
+      title: 'Inventario',
+      href: '/inventory',
+      icon: <AssignmentIcon />
+    },
+    {
+      title: 'ventas',
+      href: '/ventas',
+      icon: <AddShoppingCartIcon />
+    },
+    { title: 'pedidos', href: '/pedidos', icon: <LocalMallIcon /> },
+    {
+      title: 'Clientes',
+      href: '/clients',
+      icon: <PeopleIcon />
     }
   ];
 
@@ -101,9 +123,16 @@ const Sidebar = props => {
         <Divider className={classes.divider} />
         <SidebarNav
           className={classes.nav}
-          pages={pages}
+          pages={
+            state.user !== null &&
+            state.user.displayName === 'admin'
+              ? admin
+              : state.user.displayName === 'tienda01' ||
+                state.user.displayName === 'tienda02'
+                ? tiendas
+                : []
+          }
         />
-        <UpgradePlan />
       </div>
     </Drawer>
   );

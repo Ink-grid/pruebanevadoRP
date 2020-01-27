@@ -1,19 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Link as RouterLink, withRouter } from 'react-router-dom';
+import Alert from '@material-ui/lab/Alert';
+import { StoreContext } from '../../context/StoreContext';
+import { auth } from '../../utils/firebase';
+import LinearProgress from '@material-ui/core/LinearProgress';
 import PropTypes from 'prop-types';
 import validate from 'validate.js';
 import { makeStyles } from '@material-ui/styles';
-import {
-  Grid,
-  Button,
-  IconButton,
-  TextField,
-  Link,
-  Typography
-} from '@material-ui/core';
-import ArrowBackIcon from '@material-ui/icons/ArrowBack';
-
-import { Facebook as FacebookIcon, Google as GoogleIcon } from 'icons';
+import { timeout } from '../../utils/Libs';
+import { Grid, Button, TextField, Typography } from '@material-ui/core';
 
 const schema = {
   email: {
@@ -126,16 +121,66 @@ const useStyles = makeStyles(theme => ({
 }));
 
 const SignIn = props => {
-  const { history } = props;
-
   const classes = useStyles();
-
+  const [loading, setLoading] = useState(false);
+  const [message, setMesage] = useState({
+    state: false,
+    message: null
+  });
+  const { actions } = useContext(StoreContext);
   const [formState, setFormState] = useState({
     isValid: false,
     values: {},
     touched: {},
     errors: {}
   });
+
+  const singIn = async e => {
+    e.preventDefault();
+    const form = new FormData(e.target);
+
+    if (form.get('email') && form.get('password')) {
+      setLoading(true);
+      try {
+        const respo = await auth().signInWithEmailAndPassword(
+          form.get('email'),
+          form.get('password')
+        );
+
+        actions.setUser(respo.user);
+        actions.setLogin(true);
+
+        window.location = '/';
+
+        setLoading(false);
+      } catch (error) {
+        setLoading(false);
+        console.log(error);
+        switch (error.code) {
+          case 'auth/user-not-found':
+            setMesage({ state: true, message: error.message });
+            await timeout(3000);
+            setMesage({ state: false, message: null });
+            break;
+
+          case 'auth/wrong-password':
+            setMesage({ state: true, message: error.message });
+            await timeout(3000);
+            setMesage({ state: false, message: null });
+            break;
+
+          case 'auth/too-many-requests':
+            setMesage({ state: true, message: error.message });
+            await timeout(3000);
+            setMesage({ state: false, message: null });
+            break;
+          default:
+            alert(error.code);
+            break;
+        }
+      }
+    }
+  };
 
   useEffect(() => {
     const errors = validate(formState.values, schema);
@@ -146,10 +191,6 @@ const SignIn = props => {
       errors: errors || {}
     }));
   }, [formState.values]);
-
-  const handleBack = () => {
-    history.goBack();
-  };
 
   const handleChange = event => {
     event.persist();
@@ -170,10 +211,10 @@ const SignIn = props => {
     }));
   };
 
-  const handleSignIn = event => {
-    event.preventDefault();
-    history.push('/');
-  };
+  // const handleSignIn = event => {
+  //   event.preventDefault();
+  //   history.push('/');
+  // };
 
   const hasError = field =>
     formState.touched[field] && formState.errors[field] ? true : false;
@@ -222,63 +263,36 @@ const SignIn = props => {
           xs={12}
         >
           <div className={classes.content}>
-            <div className={classes.contentHeader}>
-              <IconButton onClick={handleBack}>
-                <ArrowBackIcon />
-              </IconButton>
-            </div>
+            {loading && <LinearProgress />}
             <div className={classes.contentBody}>
               <form
                 className={classes.form}
-                onSubmit={handleSignIn}
+                onSubmit={singIn}
               >
                 <Typography
                   className={classes.title}
                   variant="h2"
                 >
-                  Sign in
+                  Ingresar
                 </Typography>
+
                 <Typography
                   color="textSecondary"
                   gutterBottom
-                >
-                  Sign in with social media
-                </Typography>
-                <Grid
-                  className={classes.socialButtons}
-                  container
-                  spacing={2}
-                >
-                  <Grid item>
-                    <Button
-                      color="primary"
-                      onClick={handleSignIn}
-                      size="large"
-                      variant="contained"
-                    >
-                      <FacebookIcon className={classes.socialIcon} />
-                      Login with Facebook
-                    </Button>
-                  </Grid>
-                  <Grid item>
-                    <Button
-                      onClick={handleSignIn}
-                      size="large"
-                      variant="contained"
-                    >
-                      <GoogleIcon className={classes.socialIcon} />
-                      Login with Google
-                    </Button>
-                  </Grid>
+                />
+                <br />
+                <Grid item>
+                  {message.state && (
+                    <Alert severity="error">{message.message}</Alert>
+                  )}
                 </Grid>
+
                 <Typography
                   align="center"
                   className={classes.sugestion}
                   color="textSecondary"
                   variant="body1"
-                >
-                  or login with email address
-                </Typography>
+                />
                 <TextField
                   className={classes.textField}
                   error={hasError('email')}
@@ -316,21 +330,8 @@ const SignIn = props => {
                   type="submit"
                   variant="contained"
                 >
-                  Sign in now
+                  Ingresar
                 </Button>
-                <Typography
-                  color="textSecondary"
-                  variant="body1"
-                >
-                  Don't have an account?{' '}
-                  <Link
-                    component={RouterLink}
-                    to="/sign-up"
-                    variant="h6"
-                  >
-                    Sign up
-                  </Link>
-                </Typography>
               </form>
             </div>
           </div>

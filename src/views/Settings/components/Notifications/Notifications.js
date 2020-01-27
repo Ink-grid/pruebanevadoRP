@@ -24,6 +24,10 @@ const useStyles = makeStyles(() => ({
 }));
 
 const Notifications = props => {
+  const hola = () => {
+    alert('hoal');
+  };
+
   const { className, ...rest } = props;
 
   const classes = useStyles();
@@ -132,6 +136,7 @@ const Notifications = props => {
         <CardActions>
           <Button
             color="primary"
+            onClick={() => hola()}
             variant="outlined"
           >
             Save

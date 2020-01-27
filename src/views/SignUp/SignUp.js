@@ -1,19 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { auth } from '../../utils/firebase';
 import { Link as RouterLink, withRouter } from 'react-router-dom';
+import Alert from '@material-ui/lab/Alert';
 import PropTypes from 'prop-types';
+import LinearProgress from '@material-ui/core/LinearProgress';
 import validate from 'validate.js';
 import { makeStyles } from '@material-ui/styles';
-import {
-  Grid,
-  Button,
-  IconButton,
-  TextField,
-  Link,
-  FormHelperText,
-  Checkbox,
-  Typography
-} from '@material-ui/core';
-import ArrowBackIcon from '@material-ui/icons/ArrowBack';
+import { Grid, Button, TextField, Typography } from '@material-ui/core';
 
 const schema = {
   firstName: {
@@ -145,6 +138,12 @@ const SignUp = props => {
 
   const classes = useStyles();
 
+  const [loading, setLoading] = useState(false);
+  const [message, setMesage] = useState({
+    state: false,
+    message: null
+  });
+
   const [formState, setFormState] = useState({
     isValid: false,
     values: {},
@@ -157,7 +156,7 @@ const SignUp = props => {
 
     setFormState(formState => ({
       ...formState,
-      isValid: errors ? false : true,
+      isValid: true,
       errors: errors || {}
     }));
   }, [formState.values]);
@@ -181,13 +180,52 @@ const SignUp = props => {
     }));
   };
 
-  const handleBack = () => {
-    history.goBack();
-  };
+  //regresar una navegacion anterior
+  // const handleBack = () => {
+  //   history.goBack();
+  // };
 
-  const handleSignUp = event => {
+  const handleSignUp = async event => {
     event.preventDefault();
-    history.push('/');
+
+    const form = new FormData(event.target);
+
+    if (form.get('firstName') && form.get('email') && form.get('password')) {
+      setLoading(true);
+      try {
+        await auth().createUserWithEmailAndPassword(
+          form.get('email'),
+          form.get('password')
+        );
+
+        const user = auth().currentUser;
+        await user.updateProfile({
+          displayName: form.get('firstName')
+        });
+        setLoading(false);
+        setMesage({ state: true, message: 'se registro con exito el usuario' });
+      } catch (error) {
+        setLoading(false);
+        switch (error.code) {
+          case 'auth/email-already-in-use':
+            setMesage({ state: true, message: error.message });
+            break;
+
+          case 'auth/weak-password':
+            setMesage({ state: true, message: error.message });
+            break;
+
+          case 'auth/invalid-email':
+            setMesage({ state: true, message: error.message });
+            break;
+
+          default:
+            alert(error.code);
+            break;
+        }
+        // alert(error.code)
+      }
+    }
   };
 
   const hasError = field =>
@@ -202,34 +240,8 @@ const SignUp = props => {
         <Grid
           className={classes.quoteContainer}
           item
-          lg={5}
-        >
-          <div className={classes.quote}>
-            <div className={classes.quoteInner}>
-              <Typography
-                className={classes.quoteText}
-                variant="h1"
-              >
-                Hella narwhal Cosby sweater McSweeney's, salvia kitsch before
-                they sold out High Life.
-              </Typography>
-              <div className={classes.person}>
-                <Typography
-                  className={classes.name}
-                  variant="body1"
-                >
-                  Takamaru Ayako
-                </Typography>
-                <Typography
-                  className={classes.bio}
-                  variant="body2"
-                >
-                  Manager at inVision
-                </Typography>
-              </div>
-            </div>
-          </div>
-        </Grid>
+          lg={2}
+        />
         <Grid
           className={classes.content}
           item
@@ -237,28 +249,25 @@ const SignUp = props => {
           xs={12}
         >
           <div className={classes.content}>
-            <div className={classes.contentHeader}>
-              <IconButton onClick={handleBack}>
-                <ArrowBackIcon />
-              </IconButton>
-            </div>
             <div className={classes.contentBody}>
               <form
                 className={classes.form}
                 onSubmit={handleSignUp}
               >
+                {loading && <LinearProgress />}
+                {message.state && (
+                  <Alert severity="error">{message.message}</Alert>
+                )}
                 <Typography
                   className={classes.title}
                   variant="h2"
                 >
-                  Create new account
+                  Registrar nuevo usuario
                 </Typography>
                 <Typography
                   color="textSecondary"
                   gutterBottom
-                >
-                  Use your email to create new account
-                </Typography>
+                />
                 <TextField
                   className={classes.textField}
                   error={hasError('firstName')}
@@ -266,25 +275,11 @@ const SignUp = props => {
                   helperText={
                     hasError('firstName') ? formState.errors.firstName[0] : null
                   }
-                  label="First name"
+                  label="Rol"
                   name="firstName"
                   onChange={handleChange}
                   type="text"
                   value={formState.values.firstName || ''}
-                  variant="outlined"
-                />
-                <TextField
-                  className={classes.textField}
-                  error={hasError('lastName')}
-                  fullWidth
-                  helperText={
-                    hasError('lastName') ? formState.errors.lastName[0] : null
-                  }
-                  label="Last name"
-                  name="lastName"
-                  onChange={handleChange}
-                  type="text"
-                  value={formState.values.lastName || ''}
                   variant="outlined"
                 />
                 <TextField
@@ -315,36 +310,7 @@ const SignUp = props => {
                   value={formState.values.password || ''}
                   variant="outlined"
                 />
-                <div className={classes.policy}>
-                  <Checkbox
-                    checked={formState.values.policy || false}
-                    className={classes.policyCheckbox}
-                    color="primary"
-                    name="policy"
-                    onChange={handleChange}
-                  />
-                  <Typography
-                    className={classes.policyText}
-                    color="textSecondary"
-                    variant="body1"
-                  >
-                    I have read the{' '}
-                    <Link
-                      color="primary"
-                      component={RouterLink}
-                      to="#"
-                      underline="always"
-                      variant="h6"
-                    >
-                      Terms and Conditions
-                    </Link>
-                  </Typography>
-                </div>
-                {hasError('policy') && (
-                  <FormHelperText error>
-                    {formState.errors.policy[0]}
-                  </FormHelperText>
-                )}
+
                 <Button
                   className={classes.signUpButton}
                   color="primary"
@@ -354,21 +320,8 @@ const SignUp = props => {
                   type="submit"
                   variant="contained"
                 >
-                  Sign up now
+                  Registrar
                 </Button>
-                <Typography
-                  color="textSecondary"
-                  variant="body1"
-                >
-                  Have an account?{' '}
-                  <Link
-                    component={RouterLink}
-                    to="/sign-in"
-                    variant="h6"
-                  >
-                    Sign in
-                  </Link>
-                </Typography>
               </form>
             </div>
           </div>
